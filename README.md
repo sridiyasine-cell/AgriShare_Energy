@@ -1,155 +1,420 @@
-import tailwindcss from '@tailwindcss/vite';
-import react from '@vitejs/plugin-react';
-import fs from 'fs';
-import path from 'path';
-import {defineConfig} from 'vite';
+import { useMemo, useState } from 'react';
+import {
+  INITIAL_DIGITAL_LOGS,
+  INITIAL_ENERGY_OFFERS,
+  INITIAL_EQUIPMENT,
+  INITIAL_NEED_REQUESTS,
+  INITIAL_REVIEWS,
+  INITIAL_ROUTES,
+  MAINTENANCE_PROVIDERS,
+} from './data/seedData';
+import {
+  BookingRecord,
+  DigitalLogEntry,
+  EnergyOffer,
+  EquipmentItem,
+  FarmerProfile,
+  FarmerReview,
+  NeedRequest,
+  PlatformView,
+  RouteLoop,
+  RouteStop,
+} from './types/agrishare';
+import { Header } from './components/Header';
+import { HeroOverview } from './components/HeroOverview';
+import { EquipmentMarketplace } from './components/EquipmentMarketplace';
+import { EnergyMarketplace } from './components/EnergyMarketplace';
+import { SmartRoutingMap } from './components/SmartRoutingMap';
+import { FarmerRequestsView } from './components/FarmerRequestsView';
+import { TrustAndLogsView } from './components/TrustAndLogsView';
+import { BusinessModelView } from './components/BusinessModelView';
+import { BookingModal, BookingTarget } from './components/BookingModal';
+import { PublishOfferModal } from './components/PublishOfferModal';
 
-export default defineConfig(() => {
-  return {
-    plugins: [
-      react(),
-      tailwindcss(),
-      // Copies src/assets into dist/ so root-relative URLs like
-      // "/src/assets/images/..." (e.g. generate_image output) still resolve
-      // in production builds. Do not remove.
-      {
-        name: 'copy-unbundled-src-assets',
-        apply: 'build',
-        closeBundle(error?: Error): void {
-          if (error) {
-            return;
-          }
-          const distDir = path.resolve(__dirname, 'dist');
-          const srcAssets = path.resolve(__dirname, 'src/assets');
-          const distAssets = path.resolve(distDir, 'src/assets');
-          if (fs.existsSync(distDir) && fs.existsSync(srcAssets)) {
-            fs.cpSync(srcAssets, distAssets, {recursive: true, force: true});
-          }
-        },
-      },
-    ],
-    resolve: {
-      alias: {
-        '@': path.resolve(__dirname, '.'),
-      },
-    },
-    server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modify—file watching is disabled to prevent flickering during agent edits.
-      hmr: process.env.DISABLE_HMR !== 'true',
-      {
-  "compilerOptions": {
-    "target": "ES2022",
-    "experimentalDecorators": true,
-    "useDefineForClassFields": false,
-    "module": "ESNext",
-    "types": ["vite/client"],
-    "lib": [
-      "ES2022",
-      "DOM",
-      "DOM.Iterable"
-    ],
-    "skipLibCheck": true,
-    "moduleResolution": "bundler",
-    "isolatedModules": true,
-    "moduleDetection": "force",
-    "allowJs": true,
-    "jsx": "react-jsx",
-    "paths": {
-      "@/*": [
-        "./*"
-      ]
-    },
-    "allowImportingTsExtensions": true,
-    "noEmit": true
-  },
-  "exclude": ["dist"]
+const INITIAL_BOOKINGS: BookingRecord[] = [
   {
-  "name": "react-example",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite --port=3000 --host=0.0.0.0",
-    "build": "vite build",
-    "preview": "vite preview",
-    "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
+    id: 'DZ-8841',
+    kind: 'equipment',
+    itemTitle: 'جرار زراعي رباعي الدفع — John Deere 6155M',
+    providerName: 'عمي لخضر بن عيسى',
+    quantityLabel: '3 ساعات',
+    baseAmount: 11220,
+    routeDiscount: 480,
+    microInsuranceFee: 450,
+    platformCommission: 673,
+    totalPaid: 12343,
+    deliveryNote: 'مدمج مع مسار سهل متيجة الشرقي · ولاية البليدة (09)',
+    createdAt: '2026-11-16',
   },
-  "dependencies": {
-    "@google/genai": "^2.4.0",
-    "@tailwindcss/vite": "^4.3.3",
-    "@vitejs/plugin-react": "^6.1.1",
-    "lucide-react": "^0.546.0",
-    "react": "^19.0.1",
-    "react-dom": "^19.0.1",
-    "vite": "^8.3.0",
-    "express": "^4.21.2",
-    "dotenv": "^17.2.3",
-    "motion": "^12.23.24"
+  {
+    id: 'DZ-3902',
+    kind: 'energy',
+    itemTitle: 'محطة شحن بطاريات الليثيوم — مزرعة الرمال الذهبية',
+    providerName: 'كريم بلقاسم',
+    quantityLabel: '2 بطارية (10 kWh)',
+    baseAmount: 440,
+    routeDiscount: 0,
+    microInsuranceFee: 450,
+    platformCommission: 26,
+    totalPaid: 916,
+    deliveryNote: 'تعبئة واستلام بطارية · ولاية الوادي (39)',
+    createdAt: '2026-11-17',
   },
-  "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@types/react": "^19.3.0",
-    "@types/react-dom": "^19.3.0",
-    "autoprefixer": "^10.4.21",
-    "esbuild": "^0.25.0",
-    "tailwindcss": "^4.3.3",
-    "tsx": "^4.21.0",
-    "typescript": "^7.0.2",
-    "@types/express": "^4.17.21"
-    
-  "name": "AgriShare Energy",
-  "description": "منصة رقمية جزائرية لمشاركة المعدات الفلاحية وتبادل فائض الطاقة الشمسية والبطاريات بالدينار الجزائري عبر 58 ولاية",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-  <!doctype html>
-<html lang="ar" dir="rtl">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AgriShare Energy الجزائر — مشاركة المعدات الفلاحية والطاقة الشمسية عبر 58 ولاية</title>
-    <meta name="description" content="منصة رقمية جزائرية لمشاركة المعدات الفلاحية وتبادل فائض الطاقة الشمسية والبطاريات بالدينار الجزائري عبر كل ولايات الجزائر الـ 58" />
-    <meta property="og:title" content="AgriShare Energy الجزائر — مشاركة المعدات الفلاحية والطاقة الشمسية" />
-    <meta property="og:description" content="منصة رقمية جزائرية لمشاركة المعدات الفلاحية وتبادل فائض الطاقة الشمسية والبطاريات بالدينار الجزائري عبر 58 ولاية" />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="/assets/aistudio/2b7084da-ef95-417d-b423-1e1d05e64c21_193bf8b4.jpg" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <link rel="icon" type="image/jpeg" href="/assets/aistudio/2b7084da-ef95-417d-b423-1e1d05e64c21_193bf8b4.jpg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-  </head>
-  <body class="bg-[#F7F9F6] text-[#0F1F16] antialiased selection:bg-[#15803D]/15 selection:text-[#0F1F16]">
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+];
 
-      // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
-      @import "tailwindcss";
+export default function App() {
+  const [activeView, setActiveView] = useState<PlatformView>('equipment');
+  const [selectedWilaya, setSelectedWilaya] = useState<string>('all');
+  const [equipmentList, setEquipmentList] =
+    useState<EquipmentItem[]>(INITIAL_EQUIPMENT);
+  const [energyOffers, setEnergyOffers] =
+    useState<EnergyOffer[]>(INITIAL_ENERGY_OFFERS);
+  const [routes, setRoutes] = useState<RouteLoop[]>(INITIAL_ROUTES);
+  const [selectedRouteId, setSelectedRouteId] = useState<string>(
+    INITIAL_ROUTES[0].id
+  );
+  const [digitalLogs, setDigitalLogs] =
+    useState<DigitalLogEntry[]>(INITIAL_DIGITAL_LOGS);
+  const [reviews, setReviews] = useState<FarmerReview[]>(INITIAL_REVIEWS);
+  const [bookings, setBookings] = useState<BookingRecord[]>(INITIAL_BOOKINGS);
+  const [registeredProfile, setRegisteredProfile] =
+    useState<FarmerProfile | null>(null);
+  const [needRequests, setNeedRequests] = useState<NeedRequest[]>(
+    INITIAL_NEED_REQUESTS
+  );
 
-@theme {
-  --font-display: "Cairo", "IBM Plex Sans Arabic", system-ui, sans-serif;
-  --font-sans: "IBM Plex Sans Arabic", system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
-}
+  const [bookingTarget, setBookingTarget] = useState<BookingTarget | null>(null);
+  const [isPublishOpen, setIsPublishOpen] = useState(false);
 
-@layer base {
-  html {
-    font-family: var(--font-sans);
-    scroll-behavior: smooth;
-  }
+  const totalSurplusKwh = useMemo(
+    () => energyOffers.reduce((sum, item) => sum + item.surplusKwh, 0),
+    [energyOffers]
+  );
 
-  h1, h2, h3, .font-display {
-    font-family: var(--font-display);
-  }
+  const totalDieselSavedLiters = useMemo(
+    () => routes.reduce((sum, r) => sum + r.dieselSavedLiters, 0),
+    [routes]
+  );
 
-  .tabular-nums {
-    font-variant-numeric: tabular-nums;
+  const handleInspectRoute = (routeId: string) => {
+    setSelectedRouteId(routeId);
+    setActiveView('routing');
+    const el = document.getElementById('workspace-section');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const handleJoinRoute = (routeId: string, newStop: RouteStop) => {
+    setRoutes((prev) =>
+      prev.map((route) => {
+        if (route.id !== routeId) return route;
+        return {
+          ...route,
+          directDistanceKm: route.directDistanceKm + 14,
+          optimizedDistanceKm: route.optimizedDistanceKm + 4,
+          dieselSavedLiters: route.dieselSavedLiters + 9,
+          stops: [...route.stops, newStop],
+        };
+      })
+    );
+  };
+
+  const handleConfirmBooking = (
+    record: Omit<BookingRecord, 'id' | 'createdAt'>
+  ) => {
+    const newRecord: BookingRecord = {
+      ...record,
+      id: `DZ-${Math.floor(1000 + Math.random() * 9000)}`,
+      createdAt: '2026-11-18',
+    };
+    setBookings((prev) => [newRecord, ...prev]);
+  };
+
+  const handleAddReview = (
+    review: Omit<FarmerReview, 'id' | 'dateLabel' | 'verifiedBookingCode'>
+  ) => {
+    const newReview: FarmerReview = {
+      ...review,
+      id: `rev-${Date.now()}`,
+      dateLabel: '2026-11-18',
+      verifiedBookingCode: bookings[0]?.id ?? 'AG-9120',
+    };
+    setReviews((prev) => [newReview, ...prev]);
+  };
+
+  const handlePublishEquipment = (item: EquipmentItem) => {
+    setEquipmentList((prev) => [item, ...prev]);
+    setDigitalLogs((prev) => [
+      {
+        id: `log-${Date.now()}`,
+        assetCode: `EQ-${Math.floor(100 + Math.random() * 899)}`,
+        assetName: item.name,
+        assetType: 'معدة زراعية',
+        ownerName: item.ownerName,
+        metricLabel: 'ساعات التشغيل / الفحص',
+        metricValue: `${item.operatingHours} ساعة · فحص التسجيل الأولي 100%`,
+        lastCheckDate: item.lastInspectionDate,
+        conditionStatus: 'موثوق ومفحوص',
+      },
+      ...prev,
+    ]);
+    setActiveView('equipment');
+  };
+
+  const handlePublishEnergy = (offer: EnergyOffer) => {
+    setEnergyOffers((prev) => [offer, ...prev]);
+    setDigitalLogs((prev) => [
+      {
+        id: `log-${Date.now()}`,
+        assetCode: `EN-${Math.floor(100 + Math.random() * 899)}`,
+        assetName: offer.title,
+        assetType: 'محطة طاقة وبطاريات',
+        ownerName: offer.providerName,
+        metricLabel: 'صحة الخلايا / الدورات',
+        metricValue: `${offer.batteryHealthPct}% صحة · ${offer.chargeCycles} دورة شحن`,
+        lastCheckDate: '2026-11-18',
+        conditionStatus: 'موثوق ومفحوص',
+      },
+      ...prev,
+    ]);
+    setActiveView('energy');
+  };
+
+  const handleRegisterProfile = (profile: FarmerProfile) => {
+    setRegisteredProfile(profile);
+    setSelectedWilaya(profile.wilayaCode);
+  };
+
+  const handleSubmitNeedRequest = (
+    req: Omit<NeedRequest, 'id' | 'status' | 'createdAt'>
+  ) => {
+    const newReq: NeedRequest = {
+      ...req,
+      id: `REQ-${Math.floor(504 + Math.random() * 490)}`,
+      status: 'طلب مفتوح',
+      createdAt: '2026-11-18',
+    };
+    setNeedRequests((prev) => [newReq, ...prev]);
+  };
+
+  const handleFulfillRequest = (requestId: string, providerName: string) => {
+    setNeedRequests((prev) =>
+      prev.map((req) =>
+        req.id === requestId
+          ? { ...req, status: 'تمت مطابقة مزود', matchedProvider: providerName }
+          : req
+      )
+    );
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col bg-[#F7F9F6] text-[#0F1F16]">
+      <Header
+        activeView={activeView}
+        onSelectView={setActiveView}
+        onOpenPublishModal={() => setIsPublishOpen(true)}
+      />
+
+      <main className="flex-1">
+        <HeroOverview
+          equipmentCount={equipmentList.length}
+          totalSurplusKwh={totalSurplusKwh}
+          totalDieselSavedLiters={totalDieselSavedLiters}
+          bookingsCount={bookings.length}
+          onNavigateView={setActiveView}
+        />
+
+        {/* Workspace Navigation Tabs + Active Module */}
+        <section
+          id="workspace-section"
+          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6"
+        >
+          {/* Quick View Switcher Toolbar */}
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E4E8E1] pb-4">
+            <div
+              className="flex flex-wrap items-center gap-1 p-1 bg-[#EBF0E9] rounded-lg"
+              role="tablist"
+              aria-label="أقسام منصة AgriShare Energy"
+            >
+              {(
+                [
+                  { id: 'equipment', label: 'مشاركة المعدات' },
+                  { id: 'energy', label: 'سوق الطاقة والبطاريات' },
+                  { id: 'routing', label: 'الجدولة الجغرافية' },
+                  { id: 'requests', label: 'تسجيل وطلب احتياج' },
+                  { id: 'trust', label: 'السجلات والثقة' },
+                  { id: 'business', label: 'نموذج الأعمال' },
+                ] as const
+              ).map((tab) => (
+                <button
+                  key={tab.id}
+                  role="tab"
+                  aria-selected={activeView === tab.id}
+                  type="button"
+                  onClick={() => setActiveView(tab.id)}
+                  className={`px-3.5 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors whitespace-nowrap shrink-0 ${
+                    activeView === tab.id
+                      ? 'bg-white text-[#0F1F16] shadow-xs font-semibold'
+                      : 'text-[#4A5D52] hover:text-[#0F1F16]'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="text-xs text-[#4A5D52]">
+              شبكة تعاونية فلاحية عبر 58 ولاية · الدفع بالدينار الجزائري (د.ج) · عمولة 6%
+            </div>
+          </div>
+
+          {activeView === 'equipment' && (
+            <EquipmentMarketplace
+              items={equipmentList}
+              selectedWilaya={selectedWilaya}
+              onSelectWilaya={setSelectedWilaya}
+              onBookEquipment={(item, preferredUnit) =>
+                setBookingTarget({ type: 'equipment', item, preferredUnit })
+              }
+              onInspectRoute={handleInspectRoute}
+              onOpenPublishForWilaya={() => setIsPublishOpen(true)}
+            />
+          )}
+
+          {activeView === 'energy' && (
+            <EnergyMarketplace
+              offers={energyOffers}
+              selectedWilaya={selectedWilaya}
+              onSelectWilaya={setSelectedWilaya}
+              onOrderEnergy={(offer) =>
+                setBookingTarget({ type: 'energy', offer })
+              }
+              onOpenPublishForWilaya={() => setIsPublishOpen(true)}
+            />
+          )}
+
+          {activeView === 'routing' && (
+            <SmartRoutingMap
+              routes={routes}
+              selectedRouteId={selectedRouteId}
+              onSelectRoute={setSelectedRouteId}
+              onJoinRoute={handleJoinRoute}
+            />
+          )}
+
+          {activeView === 'requests' && (
+            <FarmerRequestsView
+              profile={registeredProfile}
+              requests={needRequests}
+              selectedWilaya={selectedWilaya}
+              onSelectWilaya={setSelectedWilaya}
+              onRegisterProfile={handleRegisterProfile}
+              onResetProfile={() => setRegisteredProfile(null)}
+              onSubmitRequest={handleSubmitNeedRequest}
+              onFulfillRequest={handleFulfillRequest}
+            />
+          )}
+
+          {activeView === 'trust' && (
+            <TrustAndLogsView
+              logs={digitalLogs}
+              reviews={reviews}
+              maintenanceProviders={MAINTENANCE_PROVIDERS}
+              onAddReview={handleAddReview}
+              onBookMaintenance={(provider) =>
+                setBookingTarget({ type: 'maintenance', provider })
+              }
+            />
+          )}
+
+          {activeView === 'business' && <BusinessModelView bookings={bookings} />}
+        </section>
+      </main>
+
+      {/* Quiet Footer */}
+      <footer className="border-t border-[#E4E8E1] bg-white mt-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#4A5D52]">
+          <div className="flex items-center gap-3 font-semibold text-[#0F1F16]">
+            <img
+              src="/assets/aistudio/2b7084da-ef95-417d-b423-1e1d05e64c21_193bf8b4.jpg"
+              alt="شعار AgriShare Energy"
+              className="h-12 w-auto object-contain mix-blend-multiply shrink-0"
+            />
+            <span>
+              AgriShare Energy الجزائر — شبكة مشاركة المعدات الفلاحية والطاقة الشمسية عبر 58 ولاية (د.ج)
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-4">
+            <button
+              type="button"
+              onClick={() => setActiveView('equipment')}
+              className="hover:text-[#0F1F16]"
+            >
+              سوق المعدات
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveView('energy')}
+              className="hover:text-[#0F1F16]"
+            >
+              سوق الطاقة
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveView('routing')}
+              className="hover:text-[#0F1F16]"
+            >
+              الجدولة الجغرافية
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveView('requests')}
+              className="hover:text-[#0F1F16]"
+            >
+              تسجيل وطلب احتياج
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveView('trust')}
+              className="hover:text-[#0F1F16]"
+            >
+              الثقة والسجلات
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveView('business')}
+              className="hover:text-[#0F1F16]"
+            >
+              نموذج الأعمال
+            </button>
+          </div>
+        </div>
+      </footer>
+
+      {/* Modals */}
+      <BookingModal
+        key={
+          bookingTarget
+            ? bookingTarget.type === 'equipment'
+              ? `eq-${bookingTarget.item.id}`
+              : bookingTarget.type === 'energy'
+              ? `en-${bookingTarget.offer.id}`
+              : `mp-${bookingTarget.provider.id}`
+            : 'closed'
+        }
+        target={bookingTarget}
+        onClose={() => setBookingTarget(null)}
+        onConfirmBooking={handleConfirmBooking}
+      />
+
+      {isPublishOpen && (
+        <PublishOfferModal
+          isOpen={isPublishOpen}
+          defaultWilayaCode={selectedWilaya}
+          onClose={() => setIsPublishOpen(false)}
+          onPublishEquipment={handlePublishEquipment}
+          onPublishEnergy={handlePublishEnergy}
   }
 }
 
